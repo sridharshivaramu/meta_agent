@@ -1,0 +1,4 @@
+pipeline:
+  - supervisor
+  - coder
+  - executor

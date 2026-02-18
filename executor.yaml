@@ -1,0 +1,3 @@
+name: executor
+model: llama3:latest
+role: tool_runner

@@ -1,0 +1,9 @@
+project: meta_agent
+tasks:
+- goal: 'Create file test.txt and write:
+
+    "Container agent alive"
+
+    '
+  id: 3
+  status: done
