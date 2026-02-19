@@ -1,9 +1,22 @@
-project: meta_agent
 tasks:
-- goal: 'Create file test.txt and write:
-
-    "Container agent alive"
-
-    '
+- goal: Create a file named output.txt and write 'Meta-agent is running autonomously'.
+  id: 1
+  last_result: ''
+  retries: 0
+  status: done
+- goal: Create a Python script that generates numbers 1 to 10 and prints them.
+  id: 2
+  last_result: ''
+  retries: 0
+  status: done
+- goal: Write a Python script that creates log.txt and appends the line 'Cycle completed'.
   id: 3
+  last_result: ''
+  retries: 0
+  status: done
+- goal: Create a Python script that checks if output.txt exists and prints 'READY'
+    if true.
+  id: 4
+  last_result: ''
+  retries: 0
   status: done
