@@ -4,6 +4,7 @@ import subprocess
 import time
 import re
 import os
+from datetime import datetime
 
 # ============================================================
 # CONFIG
@@ -35,16 +36,15 @@ def run_model(model, prompt, system_prompt=""):
 
 
 # ============================================================
-# CODE EXTRACTION
+# CODE EXTRACTION (ROBUST)
 # ============================================================
 
 def extract_code(text):
-    match = re.search(r"```python(.*?)```", text, re.DOTALL)
-    if match:
-        return match.group(1).strip()
+    blocks = re.findall(r"```(?:python)?\n(.*?)```", text, re.DOTALL)
+    if blocks:
+        return blocks[-1].strip()
 
-    # fallback simple detection
-    if "print(" in text or "open(" in text:
+    if "print(" in text or "import " in text or "open(" in text:
         return text.strip()
 
     return None
@@ -55,7 +55,7 @@ def extract_code(text):
 # ============================================================
 
 def run_python(code):
-    filename = f"generated_{int(time.time())}.py"
+    filename = os.path.join(os.getcwd(), f"generated_{int(time.time())}.py")
 
     print("\n[EXECUTOR] Saving generated code...")
 
@@ -78,6 +78,16 @@ def run_python(code):
 
 
 # ============================================================
+# SAVE STATE
+# ============================================================
+
+def save_state(state):
+    time.sleep(1)
+    with open("project_state.yaml", "w") as f:
+        yaml.dump(state, f, sort_keys=False)
+
+
+# ============================================================
 # MAIN LOOP
 # ============================================================
 
@@ -86,11 +96,6 @@ print("\n--- META AGENT SERVICE STARTED ---\n")
 while True:
 
     print("\n--- META AGENT CYCLE ---\n")
-
-    # --------------------------------------------------------
-    # LOAD YAML CONFIGS
-    # --------------------------------------------------------
-
     print("[DEBUG] Loading YAML files")
 
     with open("supervisor.yaml", "r") as f:
@@ -107,10 +112,6 @@ while True:
 
     supervisor_system = supervisor.get("system_prompt", "")
     coder_system = coder.get("system_prompt", "")
-
-    # --------------------------------------------------------
-    # TASK QUEUE LOGIC
-    # --------------------------------------------------------
 
     tasks = state.get("tasks", [])
 
@@ -131,9 +132,19 @@ while True:
     print("\n[DEBUG] CURRENT TASK:", current_task["id"])
     print("[DEBUG] TASK GOAL:\n", user_goal)
 
-    # --------------------------------------------------------
+    # ========================================================
+    # ARCHITECTURAL GUARD
+    # ========================================================
+
+    if "runner" in user_goal.lower() or "framework" in user_goal.lower():
+        print("[SUPERVISOR] Architectural change detected. Skipping task.")
+        current_task["status"] = "skipped"
+        save_state(state)
+        continue
+
+    # ========================================================
     # SUPERVISOR STEP
-    # --------------------------------------------------------
+    # ========================================================
 
     print("\nRunning supervisor...\n")
 
@@ -146,9 +157,15 @@ while True:
     print("\nSupervisor says:\n")
     print(supervisor_output)
 
-    # --------------------------------------------------------
+    if "ARCHITECT_REQUIRED" in supervisor_output:
+        print("[SUPERVISOR] Architect required. Skipping task.")
+        current_task["status"] = "skipped"
+        save_state(state)
+        continue
+
+    # ========================================================
     # CODER STEP
-    # --------------------------------------------------------
+    # ========================================================
 
     print("\nRunning coder agent...\n")
 
@@ -161,9 +178,9 @@ while True:
     print("\nCoder output:\n")
     print(coder_output)
 
-    # --------------------------------------------------------
+    # ========================================================
     # EXECUTOR STEP
-    # --------------------------------------------------------
+    # ========================================================
 
     code = extract_code(coder_output)
 
@@ -173,11 +190,9 @@ while True:
         print("\nExecution result:\n")
         print(execution_result)
 
-        # ----------------------------------------------------
+        # ====================================================
         # FEEDBACK LOOP
-        # ----------------------------------------------------
-
-        print("\n[FEEDBACK LOOP] Sending result back to supervisor...\n")
+        # ====================================================
 
         feedback_prompt = f"""
 You are the supervisor reviewing execution results.
@@ -190,8 +205,6 @@ Coder Output:
 
 Execution Result:
 {execution_result}
-
-Decide:
 
 Reply with ONLY ONE LINE.
 
@@ -209,17 +222,18 @@ IMPROVE: <short instruction>
         print("\nSupervisor review:\n")
         print(review)
 
-        # ----------------------------------------------------
-        # MARK TASK COMPLETE
-        # ----------------------------------------------------
-
-        if review.strip().startswith("COMPLETE"):
+        if "COMPLETE" in review.upper():
             current_task["status"] = "done"
+            current_task["last_result"] = execution_result
+            current_task["completed_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-            with open("project_state.yaml", "w") as f:
-                yaml.dump(state, f)
+            save_state(state)
 
             print(f"[META] Task {current_task['id']} marked done.")
+
+        else:
+            current_task["retries"] = current_task.get("retries", 0) + 1
+            save_state(state)
 
     else:
         print("\n[EXECUTOR] No python code detected.")

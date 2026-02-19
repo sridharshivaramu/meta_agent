@@ -20,3 +20,51 @@ tasks:
   last_result: ''
   retries: 0
   status: done
+- goal: Create a file named ghati_test.txt and write 'Next cycle running'.
+  id: 5
+  last_result: ''
+  retries: 2
+  status: done
+- goal: Modify the runner so every completed task writes a timestamp into project_state.yaml.
+  id: 6
+  last_result: ''
+  retries: 7
+  status: done
+- goal: Create a Python script that logs supervisor output into supervisor_log.txt.
+  id: 7
+  last_result: ''
+  retries: 0
+  status: done
+- goal: Create a Python script that prints current working directory and Python version.
+  id: 8
+  last_result: '/app
+
+    3.11.14 (main, Feb  4 2026, 20:24:25) [GCC 14.2.0]
+
+    '
+  retries: 1
+  status: done
+- goal: Create a Python script that intentionally raises an exception and verify retries
+    increment.
+  id: 9
+  last_result: ''
+  retries: 2
+  status: done
+- goal: Modify runner so tasks exceeding 3 retries are marked failed.
+  id: 10
+  last_result: ''
+  retries: 3
+  status: done
+- goal: Modify the runner to print hello
+  id: 99
+  last_result: 'Hello
+
+    '
+  retries: 1
+  status: done
+- goal: Create a file named confirm_ghati.txt and write 'Task 100 active'.
+  id: 100
+  last_result: ''
+  retries: 1
+  status: done
+  completed_at: '2026-02-19 12:01:51'
