@@ -5,3 +5,4 @@ output.txt
 log.txt
 *.log
 .env
+echo "generated_*.py" >> .gitignore
